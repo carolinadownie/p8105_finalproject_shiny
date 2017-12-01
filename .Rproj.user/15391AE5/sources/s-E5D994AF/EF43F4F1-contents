@@ -1,0 +1,145 @@
+---
+title: "test_shiny"
+author: "Carolina Downie"
+date: "11/27/2017"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+runtime: shiny
+---
+```{r, Carolina section 230 - 330 }
+library(tidyverse)
+library(readxl)
+library(janitor)
+library(stringr)
+library(ggridges)
+library(ggthemes)
+library(forcats)
+library(viridis)
+library(plotly)
+library(shiny)
+library(httr)
+library(jsonlite)
+
+hospital_data_regions <- read_csv(file = "../data/Hospital_General_Information.csv", col_names = TRUE) %>% 
+  clean_names() %>% 
+  mutate(region = ifelse(grepl("ME|NH|VT|MA|RI|CT", state), "New England", ifelse(grepl("NY|PA|NJ", state), "Middle Atlantic", ifelse(grepl("WI|MI|IL|IN|OH", state), "East North Central", ifelse(grepl("ND|SD|NE|KS|MN|IA|MO", state), "West North Central", ifelse(grepl("DE|MD|DC|VA|WV|NC|SC|GA|FL", state), "South Atlantic", ifelse(grepl("KY|TN|MS|AL", state), "East South Central", ifelse(grepl("OK|TX|AR|LA", state), "West South Central", ifelse(grepl("ID|MT|WY|NV|UT|CO|AZ|NM", state), "Mountain", ifelse(grepl("AK|WA|OR|CA|HI", state), "Pacific", "U.S. Territories")))))))))) 
+
+```
+
+Column {.sidebar}
+-----------------------------------------------------------------------
+```{r}
+regions <- hospital_data_regions %>% 
+  distinct(region) %>% pull()
+# selectInput widget
+shiny::selectInput("region_choice", label = h3("Select Region"),
+            choices = regions, selected = "New England")
+
+
+
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Chart A
+```{r}
+renderPlotly({ 
+  hospital_data_regions %>%
+  filter(hospital_overall_rating != "Not Available") %>%
+  filter(region == input$region_choice) %>%
+  mutate(hospital_overall_rating = as.numeric(hospital_overall_rating)) %>%
+  group_by(region, state, hospital_overall_rating) %>%
+  mutate(num_hospitals = n()) %>%
+  plot_ly(x = ~hospital_overall_rating, y = ~num_hospitals,color = ~state, type = "bar") %>% 
+  layout(title = "Number of hospitals per hospital rating, by state", margin = list(b = 75)) 
+})
+
+
+```
+
+Row {.tabset .tabset-fade}
+-----------------------------------------------------------------------
+
+```{r}
+hospital_data = read_csv(file = "../data/Hospital_General_Information.csv", col_names = TRUE) %>% 
+  clean_names() %>%
+  select(provider_id,hospital_name,city,state,zip_code,hospital_type,hospital_ownership,hospital_overall_rating,patient_experience_national_comparison,location) %>%
+  mutate(hospital_overall_rating = as.numeric(hospital_overall_rating)) %>%
+  filter(!is.na(hospital_overall_rating)) %>%
+  separate(location, into = c("address", "coordinates"), sep = "\\(") %>% 
+  mutate(coordinates = str_sub(coordinates, 1, -2)) %>%
+  filter(!is.na(coordinates)) %>%
+separate(coordinates, into = c("Latitudes", "Longitudes"), sep = ",") 
+
+hospital_data2 <- hospital_data %>% mutate(longitude = as.numeric(Longitudes), latitude = as.numeric(Latitudes))
+
+hospital_5<- filter(hospital_data2, hospital_overall_rating == "5")
+```
+
+
+
+```{r}
+star_choice <- hospital_data2 %>% 
+  distinct(hospital_overall_rating) %>% pull()
+# selectInput widget
+shiny::selectInput("star_choice", label = h3("Select Star"),
+            choices = star_choice, selected = "5")
+```
+
+```{r}
+renderPlotly({ 
+  
+g <- list(
+  scope = 'usa',
+  projection = list(type = 'albers usa'),
+  showland = TRUE,
+  landcolor = toRGB("gray95"),
+  subunitcolor = toRGB("gray85"),
+  countrycolor = toRGB("gray85"),
+  countrywidth = 0.5,
+  subunitwidth = 0.5
+)
+
+filter(hospital_data2, hospital_overall_rating == input$star_choice) %>%
+  plot_geo(lat = ~latitude, lon = ~longitude) %>%
+  add_markers(
+    text = ~paste(hospital_name, city, state, sep = "<br />"),
+    symbol = I("circle"), size = I(8), hoverinfo = "text"
+    ) %>%
+  layout(title = 'Hospital Rankings/>(Hover for Hospital)', geo = g)
+ 
+})
+  
+
+```
+
+```{r}
+library(plotly)
+df <- read.csv('https://raw.githubusercontent.com/plotly/datasets/master/2011_february_us_airport_traffic.csv')
+
+# geo styling
+g <- list(
+  scope = 'usa',
+  projection = list(type = 'albers usa'),
+  showland = TRUE,
+  landcolor = toRGB("gray95"),
+  subunitcolor = toRGB("gray85"),
+  countrycolor = toRGB("gray85"),
+  countrywidth = 0.5,
+  subunitwidth = 0.5
+)
+
+p <- plot_geo(df, lat = ~lat, lon = ~long) %>%
+  add_markers(
+    text = ~paste(airport, city, state, paste("Arrivals:", cnt), sep = "<br />"),
+    color = ~cnt, symbol = I("square"), size = I(8), hoverinfo = "text"
+  ) %>%
+  colorbar(title = "Incoming flights<br />February 2011") %>%
+  layout(
+    title = 'Most trafficked US airports<br />(Hover for airport)', geo = g
+  )
+```
+

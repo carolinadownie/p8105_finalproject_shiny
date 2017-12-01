@@ -1,0 +1,29 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1512095420409.000,
+    "dirty" : false,
+    "encoding" : "",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "C3D793DB",
+    "lastKnownWriteTime" : 4294967302,
+    "last_content_update" : 1512095420409,
+    "path" : null,
+    "project_path" : null,
+    "properties" : {
+        "cacheKey" : "79CADD77",
+        "caption" : "star_choice",
+        "contentUrl" : "grid_resource/gridviewer.html?env=&obj=star_choice&cache_key=79CADD77",
+        "displayedObservations" : "5",
+        "environment" : "",
+        "object" : "star_choice",
+        "preview" : "0",
+        "totalObservations" : "5",
+        "variables" : "1"
+    },
+    "relative_order" : 5,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_dataframe"
+}

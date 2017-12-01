@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1512094085952.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "0",
+    "id" : "EF43F4F1",
+    "lastKnownWriteTime" : 1512057249,
+    "last_content_update" : 1512057249,
+    "path" : "~/Documents/Columbia/Semester3/Data Science/Homeworks/p8105_finalproject_cgd2137/test_shiny/test_shiny.Rmd",
+    "project_path" : null,
+    "properties" : {
+        "cursorPosition" : "114,2",
+        "scrollLine" : "0"
+    },
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}
