@@ -70,11 +70,7 @@ g <- list(
 )
 
 filter(hospital_data, hospital_overall_rating == input$star_choice) %>%
-  plot_geo(lat = ~latitude, lon = ~longitude) %>%
-  add_markers(
-    text = ~paste(hospital_name, city, state, sep = "<br />"),
-    symbol = I("circle"), size = I(8), hoverinfo = "text"
-    ) %>%
+  plot_geo(lat = ~latitude, lon = ~longitude, text = ~paste(hospital_name, city, state, sep = "<br />")) %>%
   layout(title = 'Hospital Rankings/>(Hover for Hospital)', geo = g)
  
 })
