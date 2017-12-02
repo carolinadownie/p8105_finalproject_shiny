@@ -70,8 +70,8 @@ g <- list(
 )
 
 filter(hospital_data, hospital_overall_rating == input$star_choice) %>%
-  plot_geo(lat = ~latitude, lon = ~longitude, text = ~paste(hospital_name, city, state, sep = "<br />")) %>%
-  layout(title = 'Hospital Rankings/>(Hover for Hospital)', geo = g)
+  plot_geo(lat = ~latitude, lon = ~longitude, text = ~paste(hospital_name, city, state, sep = "<br />"), marker=list(color="blue" , size=5 , opacity=0.4)) %>%
+  layout(title = 'Hospital Rankings (Hover for Hospital)', geo = g)
  
 })
   
