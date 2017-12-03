@@ -1,0 +1,115 @@
+---
+title: "p8105_finalproject_shiny"
+author: "Carolina Downie"
+date: "11/30/2017"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+runtime: shiny
+---
+
+```{r}
+library(flexdashboard)
+library(tidyverse)
+library(readxl)
+library(janitor)
+library(stringr)
+library(ggridges)
+library(ggthemes)
+library(forcats)
+library(viridis)
+library(plotly)
+library(shiny)
+library(httr)
+library(jsonlite)
+
+hospital_data <- read_csv(file = "./data/Hospital_General_Information.csv", col_names = TRUE) %>% 
+  clean_names() %>% 
+  select(-address) %>%
+  mutate(hospital_overall_rating = as.numeric(hospital_overall_rating)) %>%
+  filter(!is.na(hospital_overall_rating)) %>%
+  separate(location, into = c("address", "coordinates"), sep = "\\(") %>% 
+  mutate(coordinates = str_sub(coordinates, 1, -2)) %>%
+  filter(!is.na(coordinates)) %>%
+separate(coordinates, into = c("latitude", "longitude"), sep = ",") %>%
+  mutate(latitude = as.numeric(latitude), longitude = as.numeric(longitude))
+
+
+hospital_data_regions <- read_csv(file = "./data/Hospital_General_Information.csv", col_names = TRUE) %>% 
+  clean_names() %>% 
+  mutate(region = ifelse(grepl("ME|NH|VT|MA|RI|CT", state), "New England", ifelse(grepl("NY|PA|NJ", state), "Middle Atlantic", ifelse(grepl("WI|MI|IL|IN|OH", state), "East North Central", ifelse(grepl("ND|SD|NE|KS|MN|IA|MO", state), "West North Central", ifelse(grepl("DE|MD|DC|VA|WV|NC|SC|GA|FL", state), "South Atlantic", ifelse(grepl("KY|TN|MS|AL", state), "East South Central", ifelse(grepl("OK|TX|AR|LA", state), "West South Central", ifelse(grepl("ID|MT|WY|NV|UT|CO|AZ|NM", state), "Mountain", ifelse(grepl("AK|WA|OR|CA|HI", state), "Pacific", "U.S. Territories")))))))))) 
+
+```
+
+Column {.sidebar}
+-----------------------------------------------------------------------
+
+```{r}
+star_choice <- hospital_data %>% 
+  distinct(hospital_overall_rating) %>% arrange(desc(hospital_overall_rating))
+# selectInput widget
+shiny::selectInput("star_choice", label = h3("Select Star"),
+            choices = star_choice, selected = "5")
+
+regions <- hospital_data_regions %>% 
+  distinct(region) %>% pull()
+# selectInput widget
+shiny::selectInput("region_choice", label = h3("Select Region"),
+            choices = regions, selected = "New England")
+```
+
+
+
+
+Row
+-----------------------------------------------------------------------
+
+### Chart A
+
+```{r}
+renderPlotly({ 
+  
+g <- list(
+  scope = 'usa',
+  projection = list(type = 'albers usa'),
+  showland = TRUE,
+  landcolor = toRGB("gray95"),
+  subunitcolor = toRGB("gray85"),
+  countrycolor = toRGB("gray85"),
+  countrywidth = 0.5,
+  subunitwidth = 0.5
+)
+
+filter(hospital_data, hospital_overall_rating == input$star_choice) %>%
+  plot_geo(lat = ~latitude, lon = ~longitude, text = ~paste(hospital_name, city, state, sep = "<br />"), marker=list(color="blue" , size=5 , opacity=0.4)) %>%
+  layout(title = 'Hospital Rankings (Hover for Hospital)', geo = g)
+ 
+})
+  
+```
+
+Row {.tabset .tabset-fade}
+-----------------------------------------------------------------------
+
+### Chart B
+
+```{r}
+renderPlotly({ 
+  hospital_data_regions %>%
+  filter(hospital_overall_rating != "Not Available") %>%
+  filter(region == input$region_choice) %>%
+  mutate(hospital_overall_rating = as.numeric(hospital_overall_rating)) %>%
+  group_by(region, state, hospital_overall_rating) %>%
+  mutate(num_hospitals = n()) %>%
+  plot_ly(x = ~hospital_overall_rating, y = ~num_hospitals,color = ~state, type = "bar") %>% 
+  layout(title = "Number of hospitals per hospital rating, by state", margin = list(b = 75)) 
+})
+```
+
+### Chart C
+
+```{r}
+
+```
+
