@@ -17,32 +17,50 @@ library(ggthemes)
 library(forcats)
 library(viridis)
 library(plotly)
+library(rvest)
+library(httr)
 ```
 
 
 ```{r}
 # cleaning the data
-hospital_data = read_csv(file = "./data/Hospital_General_Information.csv", col_names = TRUE) %>% 
-  clean_names() %>%
-  select(provider_id,hospital_name,city,state,zip_code,hospital_type,hospital_ownership,hospital_overall_rating,patient_experience_national_comparison,location) %>%
-  mutate(hospital_overall_rating = as.numeric(hospital_overall_rating)) %>%
-  filter(!is.na(hospital_overall_rating)) %>%
-  separate(location, into = c("address", "coordinates"), sep = "\\(") %>% 
-  mutate(coordinates = str_sub(coordinates, 1, -2)) %>%
-  filter(!is.na(coordinates)) %>%
-separate(coordinates, into = c("Latitudes", "Longitudes"), sep = ",") 
+hospital_data_2 <- read_csv("./data/hospital_data_2.csv")
 ```
 
+```{r function for scraping hospital rankings from Honor Roll list (can select for different years) when it is arranged in a table with rank, hospital name, and number of points}
+
+honor_roll_scrape <- function(url) {
+
+honor_roll_html <- read_html(url)
+
+rank <- honor_roll_html %>% html_nodes("td:nth-child(1)") %>% html_text() %>% data.frame() %>% rename(rank = ".")
+
+hospital_name <- honor_roll_html %>% html_nodes("td:nth-child(2)") %>% html_text() %>% data.frame() %>% rename(hospital = ".")
+
+points <- honor_roll_html %>% html_nodes("td:nth-child(3)") %>% html_text() %>% data.frame() %>% rename(points = ".") %>% mutate(points = as.numeric(as.character(points))) 
+
+hospitals_honor_roll <- cbind(rank, hospital_name, points)
+
+hospitals_honor_roll <- hospitals_honor_roll[2:21,]
+}
 
 
-Column {data-width=650}
+```
+
+```{r 2016-2017 Honor Roll hospitals with points}
+hospital_honor_roll_2016 <- honor_roll_scrape("https://web.archive.org/web/20160816171510/http://health.usnews.com/health-care/best-hospitals/articles/best-hospitals-honor-roll-and-overview")
+
+#web.archive.org August 16, 2016 
+```
+
+Column {data-width=500}
 -----------------------------------------------------------------------
 
 ### Chart A
 
 ```{r}
 box_ggplot_owner =
-hospital_data %>% 
+hospital_data_2 %>% 
   filter(hospital_ownership != "Tribal") %>%
   mutate(hospital_ownership = as.factor(hospital_ownership)) %>%
   mutate(hospital_overall_rating =  as.character(hospital_overall_rating)) %>%
@@ -62,13 +80,49 @@ box_ggplot_owner %>%
   layout(title ="Count of Hospitals by Different Ownership and Rating" ,margin = list(b = 180), xaxis=list(title = "Hospital Ownership",tickangle = 30))
 ```
 
-Column {data-width=350}
+Column {data-width=500}
 -----------------------------------------------------------------------
 
 ### Chart B
 
 ```{r}
+##Creating new data set w/ normalized column values for points
+hospital_honor_roll_2016_newc = hospital_honor_roll_2016 %>%
+##used normalized value (b-a)*(W-c)/(d+c)+a
+mutate(new_score = (4 * points/480 + 1)) 
 
+##Create vector
+provider_id = c("240010", "360180", "220071", "210009", "050376", "330101", "050454", "140281", "390223", "330214", "260032", "390164", "220110", "050441", "330024", "340030", "050625", "230046", "450358", "060024")
+
+##Add column to hospital_honor_roll_2016
+hospital_honor_roll_2016_new <- cbind(hospital_honor_roll_2016_newc, provider_id)
+
+##Merging w/ new column
+Merged_dataset <- full_join(hospital_honor_roll_2016_new, hospital_data_2, by = "provider_id")
+
+medicare_hospitals <- Merged_dataset %>% select(hospital, hospital_name, provider_id, hospital_overall_rating) %>% mutate(score = hospital_overall_rating, ranking_type = "medicare") %>% select(hospital, hospital_name, provider_id, score, ranking_type)
+
+usnews_hospitals <- Merged_dataset %>% select(hospital,hospital_name, provider_id, new_score) %>% mutate(score = new_score, ranking_type = "usnews") %>% select(hospital, hospital_name, provider_id, score, ranking_type)
+
+medicare_usnews <- rbind(medicare_hospitals, usnews_hospitals)
+
+# Creates a chart of the differences between the USNews and Medicare scores
+medicare_usnews %>% 
+  drop_na() %>% 
+  spread(key = ranking_type, value = score) %>%
+  mutate(score_diff = usnews - medicare) %>%
+  mutate(pos_score_diff = ifelse(score_diff < 0, "Medicare > USNews", "USNews > Medicare")) %>% 
+  mutate(hospital = fct_reorder(hospital, score_diff)) %>%
+  ggplot(aes(hospital, score_diff, fill = pos_score_diff)) +
+  geom_col() +
+  coord_flip() +
+  ylab("USNews score - Medicare score") +
+  xlab("") +
+  scale_fill_discrete(name = "") +
+  theme(legend.position = "bottom") +
+  theme(axis.text.y = element_text(size = 6)) +
+  labs(title = "Difference between USNews and Medicare Scores") +
+  theme(plot.title = element_text(hjust = 1.1))
 ```
 
 
