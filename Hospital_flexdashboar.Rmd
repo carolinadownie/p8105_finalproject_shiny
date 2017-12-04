@@ -1,0 +1,75 @@
+---
+title: "FlexBoard for Hospitals"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(tidyverse)
+library(readxl)
+library(janitor)
+library(stringr)
+library(ggridges)
+library(ggthemes)
+library(forcats)
+library(viridis)
+library(plotly)
+```
+
+
+```{r}
+# cleaning the data
+hospital_data = read_csv(file = "./data/Hospital_General_Information.csv", col_names = TRUE) %>% 
+  clean_names() %>%
+  select(provider_id,hospital_name,city,state,zip_code,hospital_type,hospital_ownership,hospital_overall_rating,patient_experience_national_comparison,location) %>%
+  mutate(hospital_overall_rating = as.numeric(hospital_overall_rating)) %>%
+  filter(!is.na(hospital_overall_rating)) %>%
+  separate(location, into = c("address", "coordinates"), sep = "\\(") %>% 
+  mutate(coordinates = str_sub(coordinates, 1, -2)) %>%
+  filter(!is.na(coordinates)) %>%
+separate(coordinates, into = c("Latitudes", "Longitudes"), sep = ",") 
+```
+
+
+
+Column {data-width=650}
+-----------------------------------------------------------------------
+
+### Chart A
+
+```{r}
+box_ggplot_owner =
+hospital_data %>% 
+  filter(hospital_ownership != "Tribal") %>%
+  mutate(hospital_ownership = as.factor(hospital_ownership)) %>%
+  mutate(hospital_overall_rating =  as.character(hospital_overall_rating)) %>%
+  group_by(hospital_ownership) %>%
+  count(hospital_overall_rating) %>%
+  spread(key=hospital_overall_rating, value=n) 
+
+box_ggplot_owner[is.na(box_ggplot_owner)] <- 0
+
+box_ggplot_owner %>%
+  plot_ly(x = ~hospital_ownership, y = ~ `1`, type = 'bar', name = 'Rating 1') %>%
+  add_trace(y = ~ `2`, name = 'Rating 2') %>%
+  add_trace(y = ~ `3`, name = 'Rating 3') %>%
+  add_trace(y = ~ `4`, name = 'Rating 4') %>%
+  add_trace(y = ~ `5`, name = 'Rating 5') %>%
+  layout(yaxis = list(title = 'Count'), barmode = 'stack') %>%
+  layout(title ="Count of Hospitals by Different Ownership and Rating" ,margin = list(b = 180), xaxis=list(title = "Hospital Ownership",tickangle = 30))
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### Chart B
+
+```{r}
+
+```
+
+
+
