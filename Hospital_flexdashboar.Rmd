@@ -117,10 +117,12 @@ medicare_usnews %>%
   geom_col() +
   coord_flip() +
   ylab("USNews score - Medicare score") +
+  xlab("") +
   scale_fill_discrete(name = "") +
   theme(legend.position = "bottom") +
   theme(axis.text.y = element_text(size = 6)) +
-  labs(title = "Difference between USNews and Medicare Scores")
+  labs(title = "Difference between USNews and Medicare Scores") +
+  theme(plot.title = element_text(hjust = 1.1))
 ```
 
 
