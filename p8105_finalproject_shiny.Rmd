@@ -24,20 +24,9 @@ library(shiny)
 library(httr)
 library(jsonlite)
 
-hospital_data <- read_csv(file = "./data/Hospital_General_Information.csv", col_names = TRUE) %>% 
-  clean_names() %>% 
-  select(-address) %>%
-  mutate(hospital_overall_rating = as.numeric(hospital_overall_rating)) %>%
-  filter(!is.na(hospital_overall_rating)) %>%
-  separate(location, into = c("address", "coordinates"), sep = "\\(") %>% 
-  mutate(coordinates = str_sub(coordinates, 1, -2)) %>%
-  filter(!is.na(coordinates)) %>%
-separate(coordinates, into = c("latitude", "longitude"), sep = ",") %>%
-  mutate(latitude = as.numeric(latitude), longitude = as.numeric(longitude))
+hospital_data_2 <- read_csv("./data/hospital_data_2.csv")
 
-
-hospital_data_regions <- read_csv(file = "./data/Hospital_General_Information.csv", col_names = TRUE) %>% 
-  clean_names() %>% 
+hospital_data_regions <- hospital_data_2 %>%
   mutate(region = ifelse(grepl("ME|NH|VT|MA|RI|CT", state), "New England", ifelse(grepl("NY|PA|NJ", state), "Middle Atlantic", ifelse(grepl("WI|MI|IL|IN|OH", state), "East North Central", ifelse(grepl("ND|SD|NE|KS|MN|IA|MO", state), "West North Central", ifelse(grepl("DE|MD|DC|VA|WV|NC|SC|GA|FL", state), "South Atlantic", ifelse(grepl("KY|TN|MS|AL", state), "East South Central", ifelse(grepl("OK|TX|AR|LA", state), "West South Central", ifelse(grepl("ID|MT|WY|NV|UT|CO|AZ|NM", state), "Mountain", ifelse(grepl("AK|WA|OR|CA|HI", state), "Pacific", "U.S. Territories")))))))))) 
 
 ```
@@ -46,7 +35,7 @@ Column {.sidebar}
 -----------------------------------------------------------------------
 
 ```{r}
-star_choice <- hospital_data %>% 
+star_choice <- hospital_data_regions %>% 
   distinct(hospital_overall_rating) %>% arrange(desc(hospital_overall_rating))
 # selectInput widget
 shiny::selectInput("star_choice", label = h3("Select Star"),
@@ -62,15 +51,14 @@ shiny::selectInput("region_choice", label = h3("Select Region"),
 
 
 
-Row
+Row{.tabset .tabset-fade}
 -----------------------------------------------------------------------
 
-### Chart A
+### Geographic Distribution of Medicare Hospital Star Rankings
 
 ```{r}
-renderPlotly({ 
-  
-g <- list(
+renderPlotly({
+  g <- list(
   scope = 'usa',
   projection = list(type = 'albers usa'),
   showland = TRUE,
@@ -81,18 +69,19 @@ g <- list(
   subunitwidth = 0.5
 )
 
-filter(hospital_data, hospital_overall_rating == input$star_choice) %>%
-  plot_geo(lat = ~latitude, lon = ~longitude, text = ~paste(hospital_name, city, state, sep = "<br />"), marker=list(color="blue" , size=5 , opacity=0.4)) %>%
+filter(hospital_data_regions, hospital_overall_rating == input$star_choice) %>%
+  plot_geo(lat = ~Latitudes, lon = ~Longitudes, text = ~paste(hospital_name, city, state, sep = "<br />"), marker=list(color="blue" , size=5 , opacity=0.4)) %>%
   layout(title = 'Hospital Rankings (Hover for Hospital)', geo = g)
- 
-})
+
+  })
   
+
 ```
 
 Row {.tabset .tabset-fade}
 -----------------------------------------------------------------------
 
-### Chart B
+### Number of hospitals with each star-ranking by geographic region
 
 ```{r}
 renderPlotly({ 
@@ -106,10 +95,3 @@ renderPlotly({
   layout(title = "Number of hospitals per hospital rating, by state", margin = list(b = 75)) 
 })
 ```
-
-### Chart C
-
-```{r}
-
-```
-
