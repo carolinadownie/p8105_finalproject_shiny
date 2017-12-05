@@ -89,7 +89,7 @@ Column {data-width=500}
 ##Creating new data set w/ normalized column values for points
 hospital_honor_roll_2016_newc = hospital_honor_roll_2016 %>%
 ##used normalized value (b-a)*(W-c)/(d+c)+a
-mutate(new_score = (4 * points/480 + 1)) 
+mutate(new_score = (4 * points/448 + 1)) 
 
 ##Create vector
 provider_id = c("240010", "360180", "220071", "210009", "050376", "330101", "050454", "140281", "390223", "330214", "260032", "390164", "220110", "050441", "330024", "340030", "050625", "230046", "450358", "060024")
