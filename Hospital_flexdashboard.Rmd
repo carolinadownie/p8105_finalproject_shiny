@@ -1,12 +1,12 @@
 ---
-title: "FlexBoard for Hospitals"
+title: "Hospital Ranking Visualizations"
 output: 
   flexdashboard::flex_dashboard:
     orientation: columns
     vertical_layout: fill
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include = FALSE}
 library(flexdashboard)
 library(tidyverse)
 library(readxl)
@@ -23,7 +23,6 @@ library(httr)
 
 
 ```{r}
-# cleaning the data
 hospital_data_2 <- read_csv("./data/hospital_data_2.csv")
 ```
 
@@ -53,10 +52,10 @@ hospital_honor_roll_2016 <- honor_roll_scrape("https://web.archive.org/web/20160
 #web.archive.org August 16, 2016 
 ```
 
-Column {data-width=500}
+Column {data-width=525}
 -----------------------------------------------------------------------
 
-### Chart A
+### Number and rating of hospitals, by ownership
 
 ```{r}
 box_ggplot_owner =
@@ -66,7 +65,7 @@ hospital_data_2 %>%
   mutate(hospital_overall_rating =  as.character(hospital_overall_rating)) %>%
   group_by(hospital_ownership) %>%
   count(hospital_overall_rating) %>%
-  spread(key=hospital_overall_rating, value=n) 
+  spread(key = hospital_overall_rating, value = n) 
 
 box_ggplot_owner[is.na(box_ggplot_owner)] <- 0
 
@@ -77,13 +76,13 @@ box_ggplot_owner %>%
   add_trace(y = ~ `4`, name = 'Rating 4') %>%
   add_trace(y = ~ `5`, name = 'Rating 5') %>%
   layout(yaxis = list(title = 'Count'), barmode = 'stack') %>%
-  layout(title ="Count of Hospitals by Different Ownership and Rating" ,margin = list(b = 180), xaxis=list(title = "Hospital Ownership",tickangle = 30))
+  layout(title = "Count of Hospitals by Different Ownership and Rating", margin = list(b = 180), xaxis = list(title = "", tickangle = 50))
 ```
 
-Column {data-width=500}
+Column {data-width=475}
 -----------------------------------------------------------------------
 
-### Chart B
+### Standardized score differences between Medicare and US News
 
 ```{r}
 ##Creating new data set w/ normalized column values for points
