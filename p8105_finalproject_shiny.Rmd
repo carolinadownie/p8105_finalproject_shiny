@@ -9,7 +9,7 @@ output:
 runtime: shiny
 ---
 
-```{r}
+```{r loading packages and data}
 library(flexdashboard)
 library(tidyverse)
 library(readxl)
@@ -26,7 +26,7 @@ library(jsonlite)
 
 hospital_data_2 <- read_csv("./data/hospital_data_2.csv")
 
-hospital_data_regions <- hospital_data_2 %>%
+hospital_data_regions <- hospital_data_2 %>% mutate(hospital_overall_rating = as.factor(hospital_overall_rating)) %>%
   mutate(region = ifelse(grepl("ME|NH|VT|MA|RI|CT", state), "New England", ifelse(grepl("NY|PA|NJ", state), "Middle Atlantic", ifelse(grepl("WI|MI|IL|IN|OH", state), "East North Central", ifelse(grepl("ND|SD|NE|KS|MN|IA|MO", state), "West North Central", ifelse(grepl("DE|MD|DC|VA|WV|NC|SC|GA|FL", state), "South Atlantic", ifelse(grepl("KY|TN|MS|AL", state), "East South Central", ifelse(grepl("OK|TX|AR|LA", state), "West South Central", ifelse(grepl("ID|MT|WY|NV|UT|CO|AZ|NM", state), "Mountain", ifelse(grepl("AK|WA|OR|CA|HI", state), "Pacific", "U.S. Territories")))))))))) 
 
 ```
@@ -34,7 +34,7 @@ hospital_data_regions <- hospital_data_2 %>%
 Column {.sidebar}
 -----------------------------------------------------------------------
 
-```{r}
+```{r input widgets}
 star_choice <- hospital_data_regions %>% 
   distinct(hospital_overall_rating) %>% arrange(desc(hospital_overall_rating))
 # selectInput widget
@@ -56,7 +56,7 @@ Row{.tabset .tabset-fade}
 
 ### Geographic Distribution of Medicare Hospital Star Rankings
 
-```{r}
+```{r map of hospitals by star rating}
 renderPlotly({
   g <- list(
   scope = 'usa',
@@ -70,9 +70,8 @@ renderPlotly({
 )
 
 filter(hospital_data_regions, hospital_overall_rating == input$star_choice) %>%
-  plot_geo(lat = ~Latitudes, lon = ~Longitudes, text = ~paste(hospital_name, city, state, sep = "<br />"), marker=list(color="blue" , size=5 , opacity=0.4)) %>%
+  plot_geo(lat = ~Latitudes, lon = ~Longitudes, text = ~paste(hospital_name, city, state, sep = "<br />"), marker = list(color = "blue" , size = 5 , opacity = 0.4)) %>%
   layout(title = 'Hospital Rankings (Hover for Hospital)', geo = g)
-
   })
   
 
@@ -83,15 +82,15 @@ Row {.tabset .tabset-fade}
 
 ### Number of hospitals with each star-ranking by geographic region
 
-```{r}
+```{r plot of number of hospitals with each rating by region}
 renderPlotly({ 
   hospital_data_regions %>%
-  filter(hospital_overall_rating != "Not Available") %>%
   filter(region == input$region_choice) %>%
-  mutate(hospital_overall_rating = as.numeric(hospital_overall_rating)) %>%
   group_by(region, state, hospital_overall_rating) %>%
   mutate(num_hospitals = n()) %>%
   plot_ly(x = ~hospital_overall_rating, y = ~num_hospitals,color = ~state, type = "bar") %>% 
-  layout(title = "Number of hospitals per hospital rating, by state", margin = list(b = 75)) 
+  layout(title = "Number of hospitals per hospital rating, by state") 
 })
 ```
+
+
